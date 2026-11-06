@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "opencode Go 配额",
+    "description": "提供 quota_check 工具：查询 opencode Go 订阅 5 小时/周/月窗口用量，支持多 key 名册逐人汇总，key 一律掩码。"
+  }
+}

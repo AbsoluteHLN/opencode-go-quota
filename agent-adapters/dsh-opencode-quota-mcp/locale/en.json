@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "opencode Go quota",
+    "description": "Exposes the quota_check tool: query opencode Go subscription usage across 5-hour/weekly/monthly windows, with per-key roster summarization; keys are always masked."
+  }
+}

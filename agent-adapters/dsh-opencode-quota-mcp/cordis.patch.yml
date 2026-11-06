@@ -1,0 +1,30 @@
+# DSH bundle patch — 把 tooLib/opencode-quota-mcp 的 stdio MCP 服务接进 profile。
+#
+# serverName 是工具命名空间，一旦定了就别改：改一次所有工具名全变（mcp__opencode__quota_check），
+# 会话历史与权限规则都会跟着失效。
+#
+# 密钥纪律：各人 API key 只写在名册文件 tooLib/opencode-quota-mcp/opencode-go-keys.txt
+# （模板即同目录这份，一人一行 `|` 分隔标签与 key），路径由 args 里的 --keys-file 显式传给
+# server。server 自身不读名册内容，只把路径透传给 CLI 子进程；stdio 子进程有 env scrub——
+# 名字含 KEY / PASSWORD / SECRET / TOKEN 或 DSH_ 前缀的环境变量一律被剥掉——所以密钥走
+# 文件不走环境，更不要从对话里收 key。stderr 诊断只打名册路径与 exists 布尔。
+#
+# failOnStartupError: false —— 名册没填/路径有误时不能把整个 DSH 卡住：server 本身照常
+# 起来（不读名册），工具调用时 CLI 才报名册错误并按 isError 返回。
+#
+# toolCallTimeoutMs: 120000 —— 多 key 名册是逐人串行查询 opencode.ai 官方接口，给足余量。
+
+- insert:
+    - id: opencode-quota-mcp
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: opencode
+        transport: stdio
+        command: 'E:\dependency-cache\node-runtime\node.exe'
+        args:
+          - 'E:\KalciriteTools\tooLib\opencode-quota-mcp\bin\mcp-server.mjs'
+          - '--keys-file'
+          - 'E:\KalciriteTools\tooLib\opencode-quota-mcp\opencode-go-keys.txt'
+        cwd: 'E:\KalciriteTools\tooLib\opencode-quota-mcp'
+        toolCallTimeoutMs: 120000
+        failOnStartupError: false
