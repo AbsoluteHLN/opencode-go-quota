@@ -62,8 +62,20 @@ key 不出本机：server 不读名册内容，只把路径透传给 CLI；输�
 
 ### 4. 接入 DSH
 
+两条路线**二选一**：插入的是同一个 patch（id `opencode-quota-mcp`），重复安装会出现
+两条同名 patch 条目，装过一条就不要再装另一条。
+
+路线 A：本地路径安装（装 `agent-adapters/` 子目录）：
+
 ```text
 plugin_manager install_bundle "<仓库路径>\agent-adapters\dsh-opencode-quota-mcp"
+```
+
+路线 B：从 GitHub 安装（装整个仓库，组合包声明在仓库根 `package.json`，指向同一条
+patch）：Web 插件页直接贴仓库 URL，或用命令行给 git 地址：
+
+```text
+plugin_manager install_bundle "https://github.com/AbsoluteHLN/opencode-go-quota"
 ```
 
 装完在对话里调 `mcp__opencode__quota_check` 验证。`cordis.patch.yml` 里的绝对路径是
