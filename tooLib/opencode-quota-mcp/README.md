@@ -45,6 +45,42 @@ node bin/opencode-go-quota.mjs [--key K]... [--key-file F] [--keys-file R]... [-
 乙|oc_在这里粘贴你的第二把Go_Key
 ```
 
+### 名册由谁填（交接给另一位同学）
+
+名册里的真实 key **不由写工具的人代填**，由持 key 的本人（或被指派的人）自己填。
+key 只落在本机的名册文件里：不进对话、不进提交、不进仓库。
+
+1. 建名册文件（模板就是同目录的 `opencode-go-keys.example.txt`）：
+
+```powershell
+Copy-Item tooLib/opencode-quota-mcp/opencode-go-keys.example.txt tooLib/opencode-quota-mcp/opencode-go-keys.txt
+```
+
+2. 编辑 `opencode-go-keys.txt`，一人一行、`|` 分隔标签与 key（见上节格式）：
+
+```text
+甲|oc_在这里粘贴你的第一把Go_Key
+乙|oc_在这里粘贴你的第二把Go_Key
+```
+
+3. 填完自己验一下（输出只有掩码标签和百分比，不会打印 key 值）：
+
+```powershell
+node tooLib/opencode-quota-mcp/bin/opencode-go-quota.mjs
+```
+
+4. 提交前再确认名册没被带进仓库：`git status` 里不应出现 `opencode-go-keys.txt`
+   （`.gitignore` 已挡这个文件名，但自己再看一眼更稳）。
+
+**没填会怎样**：名册文件不存在时 MCP server 不会起不来——它把 key 发现交给 CLI 的自动发现链
+（env / auth.json / dsh credentials / minimax config）；一条都没发现时，工具调用返回 isError
+并说明「没找到 key」，不会静默返回空。
+
+**换 key / 加人**：改同一个名册文件就行，不用重装插件——名册是每次工具调用现读的。
+
+**别做的事**：不要把 key 贴进聊天窗口、issue、截图或任何提交里。server 侧也有同一条纪律
+（instructions 随 tools/list 注入宿主）。
+
 ### key 解析优先级
 
 显式传参（--key / --key-file）> 名册（--keys-file，或 CLI 同目录自动发现）>

@@ -33,7 +33,7 @@ agent-adapters/dsh-opencode-quota-mcp/  # DSH 接入 bundle（纯配置）
 
 ## 快速开始
 
-### 1. 准备名册（可选）
+### 1. 准备名册（可选，由持 key 的本人填）
 
 多 key 场景把模板复制为运行时名册，再按格式填入各人 key（一人一行，`|` 分隔）：
 
@@ -43,6 +43,11 @@ Copy-Item tooLib/opencode-quota-mcp/opencode-go-keys.example.txt tooLib/opencode
 
 `opencode-go-keys.txt` 已被 `.gitignore` 挡住，不会被提交。单人场景可以不建名册——
 CLI 会沿 7 级解析链自动发现本机 key（env / auth.json / dsh credentials / minimax config）。
+
+**谁填**：名册里的真实 key 由持 key 的本人（或被指派的人）自己填，**不由写工具的人代填**，
+也**不要贴进聊天窗口**。完整填写步骤、格式说明、填完怎么自测、没填会怎样，见
+[`tooLib/opencode-quota-mcp/README.md`](tooLib/opencode-quota-mcp/README.md) 的
+「名册由谁填（交接给另一位同学）」一节。
 
 ### 2. 直接用 CLI
 
