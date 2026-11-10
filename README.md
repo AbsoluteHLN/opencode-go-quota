@@ -82,8 +82,11 @@ patch）：Web 插件页直接贴仓库 URL，或用命令行给 git 地址：
 plugin_manager install_bundle "https://github.com/AbsoluteHLN/opencode-go-quota"
 ```
 
+> 本仓库是**私有库**：从 GitHub 安装时需要机器上已具备该库的访问凭据
+> （例如 `gh auth login` 后 `gh auth setup-git`），否则 clone 阶段就会失败。
+
 装完在对话里调 `mcp__opencode__quota_check` 验证。`cordis.patch.yml` 里的绝对路径是
-部署示例，按本机实际路径调整。
+部署示例，按本机实际路径调整（`command` 指 Node、`args` 指 server 与名册、`cwd` 指包目录）。
 
 ### 跑探针测试
 
