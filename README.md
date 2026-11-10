@@ -1,6 +1,6 @@
 # opencode-go-quota
 
-opencode Go 订阅配额查询工具包：零依赖多 key CLI（v1.1.0）+ 一层 stdio MCP server +
+opencode Go 订阅配额查询工具包：零依赖多 key CLI（v1.2.0）+ 一层 stdio MCP server +
 DSH 接入 bundle。查询「5 小时 / 周 / 月」三个用量窗口，多 key 名册逐人串行查询，
 单把失败不中断，输出一律掩码。
 
@@ -14,12 +14,16 @@ DSH 接入 bundle。查询「5 小时 / 周 / 月」三个用量窗口，多 key
 - **DSH 接入 bundle**（`agent-adapters/dsh-opencode-quota-mcp/`）：纯配置（MCP bundle +
   cordis patch + 双语 locale），装完在对话里调 `mcp__opencode__quota_check`。
 
+另附一个**可选的桌面浮窗**（`tooLib/opencode-quota-mcp/bin/quota-widget.pyw`，tkinter）：
+同一份数据以卡片形式常驻桌面，单击收起/展开。本机部署件，内嵌本机绝对路径。
+
 ## 目录结构
 
 ```text
 tooLib/opencode-quota-mcp/            # 工具本体（CLI + MCP stdio server）
-  bin/opencode-go-quota.mjs           # CLI v1.1.0（多 key 名册循环）
+  bin/opencode-go-quota.mjs           # CLI v1.2.0（多 key 名册循环）
   bin/mcp-server.mjs                  # stdio MCP 入口薄壳（argv / 诊断 / 退出）
+  bin/quota-widget.pyw                # 可选：桌面浮窗（tkinter，单击收起/展开）
   src/mcp.mjs                         # JSON-RPC 2.0 协议面
   opencode-go-keys.example.txt        # 多 key 名册模板（纯注释，无真实 key）
 agent-adapters/dsh-opencode-quota-mcp/  # DSH 接入 bundle（纯配置）
@@ -88,6 +92,14 @@ node --test agent-adapters/dsh-opencode-quota-mcp/tests/probe.test.mjs
 ```
 
 零网络、零名册（CLI 子进程换成临时目录里的假脚本），只验证 MCP 协议面与 exit 契约。
+
+### 5. 可选：桌面浮窗
+
+```text
+pythonw tooLib/opencode-quota-mcp/bin/quota-widget.pyw
+```
+
+单击收起/展开、拖动记位、双击刷新、右键退出；数据与 CLI 同源同口径。
 
 ## 密钥纪律
 

@@ -1,5 +1,10 @@
 # 运行时名册（真实 key）——永不入库
 opencode-go-keys.txt
 
+# 桌面浮窗的运行时状态与编译缓存
+quota-widget.pos.json
+__pycache__/
+*.pyc
+
 node_modules/
 *.log

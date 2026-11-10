@@ -11,6 +11,11 @@
  *   - 说明: 官方 usage 接口只返回订阅级三窗口聚合（rolling/weekly/monthly 的 percent+resetsAt），
  *     无按人/按 key/按模型字段；多 key 循环是「一人一把独立订阅 key」的本地归因方式
  *
+ * v1.2.0 口径说明（人类可读输出尾部新增双口径说明；--json 结构与查询行为不变）:
+ *   - 本工具输出的是「账户级聚合」口径（usage 三窗口 + console 账户级 meters）
+ *   - 官方控制台另有「按模型限额」口径（每模型独立月度美元限额），两套并存互不覆盖
+ *   - 详见 https://opencode.ai/docs/console/go/
+ *
  * 数据源（官方正式接口，2026-08 上线）:
  *   GET https://opencode.ai/zen/go/v1/usage    Authorization: Bearer <Go API key>
  *   响应: { usage: { rolling|weekly|monthly: { status, percent, resetsAt } } }
@@ -48,7 +53,7 @@ import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 import path from 'node:path';
 
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 const USAGE_PRIMARY = process.env.OPENCODE_GO_USAGE_URL || 'https://opencode.ai/zen/go/v1/usage';
 const USAGE_FALLBACK = 'https://opencode.ai/inference/go/v1/usage';
 const CONSOLE_STATUS = 'https://opencode.ai/console/api/go/status';
@@ -102,7 +107,7 @@ function usage() {
     '\n' +
     '选项:\n' +
     '  --json             机器可读 JSON 输出（供其他 agent / 脚本消费）\n' +
-    '  --console          额外查询控制台接口（套餐期/金额/支付方式；非公开接口，解析失败不影响主结果）\n' +
+    '  --console          额外查询控制台接口（套餐期/总额度池/支付方式；非公开接口，解析失败不影响主结果）\n' +
     '  --key <KEY>        显式指定 API key，可重复；支持 标签|key 写法（如 张三|oc_xxx）\n' +
     '  --key-file <PATH>  从文件读单把 key：单行纯文本，或 opencode auth.json 格式\n' +
     '  --keys-file <PATH> 多人名册文件，可重复；每行一人: 标签|key 或纯 key\n' +
@@ -134,7 +139,18 @@ function usage() {
     '\n' +
     '退出码: 0 全部成功（含窗口 rate-limited，见 --json 的 anyRateLimited）\n' +
     '        1 无 key / 参数错误\n' +
-    '        2 任一 key 查询失败（多 key 部分失败也算 2）\n'
+    '        2 任一 key 查询失败（多 key 部分失败也算 2）\n' +
+    '\n' +
+    '口径说明（两部分数字，别混看）:\n' +
+    '  ① 条形/百分比 = usage 接口按订阅返回的三窗口已用百分比，是这把 key\n' +
+    '  自己的用量；官方接口无按人/按 key/按模型字段，多 key 循环是「一人一把\n' +
+    '  独立订阅 key」的本地归因。\n' +
+    '  ② --console 金额 = console 接口的账户级 meters，是整个账户共享的\n' +
+    '  总额度池，不是某一把 key 的个人消费（多 key 时为各 key 所在账户各自的池子）。\n' +
+    '  另: 官方控制台还有「按模型限额」口径: 每个模型有独立月度美元限额，\n' +
+    '  5h/周/月窗口分别为月限的 20%/50%/100%（例: DeepSeek V4.1 Flash，\n' +
+    '  Go 档月限 $100）。限额可能调整，以官方文档为准:\n' +
+    '  https://opencode.ai/docs/console/go/\n'
   );
 }
 
@@ -489,6 +505,21 @@ function fmtReset(w) {
   return p2(d.getUTCMonth() + 1) + '-' + p2(d.getUTCDate()) + ' ' + p2(d.getUTCHours()) + ':' + p2(d.getUTCMinutes()) + ' UTC';
 }
 
+function renderCaliberNote() {
+  process.stdout.write(
+    '\n口径说明（两部分数字，别混看）:\n' +
+    '  ① 条形/百分比 = usage 接口按订阅返回的三窗口已用百分比，是这把 key\n' +
+    '  自己的用量；官方接口无按人/按 key/按模型字段，多 key 循环是「一人一把\n' +
+    '  独立订阅 key」的本地归因。\n' +
+    '  ② --console 金额 = console 接口的账户级 meters，是整个账户共享的\n' +
+    '  总额度池，不是某一把 key 的个人消费（多 key 时为各 key 所在账户各自的池子）。\n' +
+    '  另: 官方控制台还有「按模型限额」口径: 每个模型有独立月度美元限额，\n' +
+    '  5h/周/月窗口分别为月限的 20%/50%/100%（例: DeepSeek V4.1 Flash，\n' +
+    '  Go 档月限 $100）。限额可能调整，以官方文档为准:\n' +
+    '  https://opencode.ai/docs/console/go/\n'
+  );
+}
+
 function renderHuman(win, consoleInfo, notes, endpoint) {
   process.stdout.write('opencode Go 额度检测 v' + VERSION + '\n');
   process.stdout.write('数据源: ' + endpoint + '\n\n');
@@ -513,14 +544,14 @@ function renderHuman(win, consoleInfo, notes, endpoint) {
   }
   if (consoleInfo) {
     const c = consoleInfo;
-    process.stdout.write('\n订阅/金额（console 内部接口，字段可能变动）:\n');
+    process.stdout.write('\n订阅与总额度池（console 内部接口；金额=账户级 meters，整个账户共享，不代表单把 key 的消费）:\n');
     if (c.periodStart || c.periodEnd) {
       process.stdout.write('  套餐期: ' + ((c.periodStart || '?').slice(0, 10)) + ' -> ' + ((c.periodEnd || '?').slice(0, 10)) +
         (c.cancelAtPeriodEnd != null ? '  cancelAtPeriodEnd=' + c.cancelAtPeriodEnd : '') + '\n');
     }
     if (c.meters) {
       const f = (m) => (m ? ((m.used == null ? '?' : '$' + m.used.toFixed(2)) + ' / ' + (m.limit == null ? '?' : '$' + m.limit.toFixed(2))) : '?');
-      process.stdout.write('  5h窗口: ' + f(c.meters.fiveHour) + '    周: ' + f(c.meters.week) + '    月: ' + f(c.meters.month) + '\n');
+      process.stdout.write('  5h: ' + f(c.meters.fiveHour) + '    周: ' + f(c.meters.week) + '    月: ' + f(c.meters.month) + '\n');
     }
     const extra = [];
     if (c.paymentMethodKind) extra.push('支付: ' + c.paymentMethodKind);
@@ -534,6 +565,7 @@ function renderHuman(win, consoleInfo, notes, endpoint) {
     process.stdout.write('\n备注:\n');
     for (const n of notes) process.stdout.write('  - ' + n + '\n');
   }
+  renderCaliberNote();
 }
 
 const WIN_SHORT = { rolling: '5h', weekly: '周', monthly: '月' };
@@ -566,6 +598,15 @@ function renderMulti(results, notes) {
   const failed = results.filter((r) => !r.ok).length;
   process.stdout.write('\n汇总: 共 ' + results.length + ' 人，成功 ' + (results.length - failed) + '，失败 ' + failed +
     (failed > 0 ? '（存在失败，退出码 2）' : '') + '\n');
+  const withMeters = results.filter((r) => r.ok && r.console && r.console.meters);
+  if (withMeters.length) {
+    process.stdout.write('\n总额度池（console meters，账户级聚合，每人各自的账户池子）:\n');
+    const f = (m) => (m ? ((m.used == null ? '?' : '$' + m.used.toFixed(2)) + ' / ' + (m.limit == null ? '?' : '$' + m.limit.toFixed(2))) : '?');
+    for (const r of withMeters) {
+      const m = r.console.meters;
+      process.stdout.write('  ' + padD(r.label, 10) + '  5h: ' + f(m.fiveHour) + '    周: ' + f(m.week) + '    月: ' + f(m.month) + '\n');
+    }
+  }
   const perNotes = [];
   for (const r of results) {
     for (const n of r.notes || []) perNotes.push('[' + r.label + '] ' + n);
@@ -575,6 +616,7 @@ function renderMulti(results, notes) {
     for (const n of notes) process.stdout.write('  - ' + n + '\n');
     for (const n of perNotes) process.stdout.write('  - ' + n + '\n');
   }
+  renderCaliberNote();
 }
 
 async function main() {

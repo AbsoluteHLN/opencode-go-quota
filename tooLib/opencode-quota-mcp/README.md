@@ -1,7 +1,8 @@
 # opencode-quota-mcp
 
-opencode Go 订阅配额查询工具包：零依赖 CLI（v1.1.0，多 key 名册）+ 一层 stdio MCP 包装，
+opencode Go 订阅配额查询工具包：零依赖 CLI（v1.2.0，多 key 名册）+ 一层 stdio MCP 包装，
 供 DSH 等宿主以 `mcp__opencode__quota_check` 查询「5 小时 / 周 / 月」三个用量窗口。
+另附一个可选的桌面浮窗（tkinter），把同一份数据以卡片形式常驻桌面。
 
 分层：**MCP server 不实现任何 quota 逻辑**，每次工具调用 spawn 同包 CLI 副本
 （按需 `--json` / `--console` + `--keys-file`），复用 CLI 的全部 key 解析链与渲染；
@@ -12,10 +13,12 @@ exit 1（参数/名册错误）与超时才报 isError。key 全程只活在名�
 
 | 路径 | 说明 |
 | --- | --- |
-| `bin/opencode-go-quota.mjs` | CLI v1.1.0（`temp/opencode-go-quota.mjs` 的字节一致副本） |
+| `bin/opencode-go-quota.mjs` | CLI v1.2.0（`temp/opencode-go-quota.mjs` 的字节一致副本） |
 | `bin/mcp-server.mjs` | stdio MCP 入口薄壳（argv 解析 / 诊断 / 退出） |
 | `src/mcp.mjs` | JSON-RPC 2.0 协议面（照抄已验证的 `tooLib/web-search-mcp` 骨架） |
-| `opencode-go-keys.example.txt` | 多 key 名册模板（使用时复制为 `opencode-go-keys.txt`；真实 key 永不入库，运行时名册已被 .gitignore 挡住） |
+| `bin/quota-widget.pyw` | 可选：桌面浮窗（tkinter），单击收起/展开、拖动记位 |
+| `opencode-go-keys.example.txt` | 名册模板（纯注释，无真实 key；复制成运行时名册再填 key） |
+| `opencode-go-keys.txt` | 运行时名册落点（默认名册；已 gitignore，真实 key 只落这里） |
 
 ## CLI 用法
 
@@ -38,8 +41,8 @@ node bin/opencode-go-quota.mjs [--key K]... [--key-file F] [--keys-file R]... [-
 
 ```text
 # 注释行
-甲|oc_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-乙|oc_yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+甲|oc_在这里粘贴你的第一把Go_Key
+乙|oc_在这里粘贴你的第二把Go_Key
 ```
 
 ### key 解析优先级
@@ -67,7 +70,18 @@ plugin_manager install_bundle "E:\KalciriteTools\agent-adapters\dsh-opencode-quo
 装完在对话里调 `mcp__opencode__quota_check` 验证。用法纪律写在 server 的
 `instructions` 里（宿主注入系统提示），不写进人设。
 
+## 桌面浮窗（可选）
+
+```text
+pythonw bin/quota-widget.pyw
+```
+
+- 无控制台黑窗；常驻桌面显示「共享池」与「本 key 自用」两段已用%。
+- 单击收起/展开（收起态与展开态同宽同栅格）、拖动记位、双击刷新、右键菜单退出。
+- 视觉走 KalciriteUI v4「folio-graphite」令牌；数值口径与 CLI 完全一致。
+- 浮窗内嵌本机绝对路径（node 与 CLI 位置），属本机部署件，不是跨机通用件。
+
 ## 与 temp/ 原件的关系
 
-`temp/opencode-go-quota.mjs` 是 v1.1.0 原件与回归基线，`bin/opencode-go-quota.mjs` 是它的
+`temp/opencode-go-quota.mjs` 是 v1.2.0 原件与回归基线，`bin/opencode-go-quota.mjs` 是它的
 字节一致副本。CLI 后续改动请两份同步（或只改 tooLib 副本后回填），当前两者 SHA-256 一致。

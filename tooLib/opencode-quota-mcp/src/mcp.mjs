@@ -26,6 +26,22 @@ const CLI_PATH = fileURLToPath(new URL('../bin/opencode-go-quota.mjs', import.me
 /** 包根名册（用户往这里填各人 key；未显式指定 --keys-file 时的默认名册） */
 const DEFAULT_KEYS_FILE = fileURLToPath(new URL('../opencode-go-keys.txt', import.meta.url));
 
+/**
+ * 解析真正要透传给 CLI 的名册路径。
+ * - 显式指定（--keys-file）→ 原样透传；文件不存在时由 CLI 报错（显式就该报错）。
+ * - 未显式指定 → 默认名册存在才用它；不存在则返回 null，让 CLI 走自己的自动发现链
+ *   （git 安装场景：名册被 .gitignore 挡住，文件根本不存在——此时若硬传路径，
+ *    CLI 会以 --keys-file ENOENT 直接退出，单人自动发现场景就被打死了）。
+ */
+export function resolveKeysFile(opts = {}) {
+  const explicit = opts.keysFile;
+  if (explicit !== undefined && explicit !== null) return explicit;
+  try {
+    if (fs.existsSync(DEFAULT_KEYS_FILE)) return DEFAULT_KEYS_FILE;
+  } catch { /* 读不到就当没有 */ }
+  return null;
+}
+
 const TOOLS = [
   {
     name: 'quota_check',
@@ -128,7 +144,7 @@ export function runQuota(opts = {}) {
  */
 export function startMcpServer(io = {}, opts = {}) {
   const outStream = io.outStream ?? process.stdout;
-  const keysFile = opts.keysFile === undefined ? DEFAULT_KEYS_FILE : opts.keysFile;
+  const keysFile = resolveKeysFile(opts);
 
   const rl = createInterface({ input: io.inStream ?? process.stdin, output: null, terminal: false });
 
@@ -214,14 +230,15 @@ export function startMcpServer(io = {}, opts = {}) {
 }
 
 /** 诊断摘要（只含路径与存在性，绝不包含名册内容——名册里有真 key）。 */
-export function describeSetup(keysFile) {
+export function describeSetup(keysFile, cliPath) {
   const tools = TOOLS.map((t) => t.name).join(', ');
+  const cliPart = cliPath ? `  cli: ${cliPath}` : '';
   if (keysFile == null) {
-    return `server: ${SERVER_NAME} (namespace)  tools: ${tools}  roster: (未指定，由 CLI 自动发现)`;
+    return `server: ${SERVER_NAME} (namespace)  tools: ${tools}  roster: (未指定，由 CLI 自动发现)${cliPart}`;
   }
   let exists = '?';
   try { exists = String(fs.existsSync(keysFile)); } catch { exists = '?'; }
-  return `server: ${SERVER_NAME} (namespace)  tools: ${tools}  roster: ${keysFile} (exists=${exists})`;
+  return `server: ${SERVER_NAME} (namespace)  tools: ${tools}  roster: ${keysFile} (exists=${exists})${cliPart}`;
 }
 
 export { SERVER_NAME };
